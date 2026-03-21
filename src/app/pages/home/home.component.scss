@@ -1,27 +1,47 @@
+$azul-claro: #8ab5de; 
+$azul-escuro: #3667a0; 
+$laranja: #d48321;
+$vermelho-erro: #b61629;
+$cinza-texto: #676769;
+$branco: #ffffff;
+$verde-sucesso: #4CAF50;
+
+/*layout principal*/
 .content {
-  margin-top: 100px;
-  padding: 60px;
+  margin-top: 80px;
+  padding: 40px 60px;
+  font-family: Arial, sans-serif;
 
   @media (max-width: 768px) {
     padding: 20px;
+    margin-top: 60px;
   }
+}
+
+.page-title {
+  color: $azul-escuro;
+  font-weight: bold;
+  margin-bottom: 30px;
 }
 
 .main-layout {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
+  gap: 30px;
 
   @media (max-width: 768px) {
-    flex-direction: column-reverse; // Inverte a ordem no mobile
+    flex-direction: column-reverse; 
+    gap: 20px;
   }
 }
 
+
 .left-column,
 .right-column {
-  padding: 20px;
-  background-color: #e8f0fe;
-  border-radius: 8px;
+  background-color: rgba($azul-claro, 0.15); 
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 
   @media (max-width: 768px) {
     padding: 15px;
@@ -30,14 +50,21 @@
 
 .left-column {
   flex: 1;
+
+  h3 {
+    color: $azul-escuro;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba($azul-claro, 0.3);
+    padding-bottom: 10px;
+  }
 }
 
 .right-column {
   flex: 0.4;
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
   flex-direction: column;
+  align-items: center;
 
   @media (max-width: 768px) {
     flex: 1;
@@ -45,33 +72,35 @@
   }
 }
 
-.demo-inline-calendar-card {
-  width: 300px;
-  margin: 0 auto;
+/* cards atendimento */
+.sem-agendamentos {
+  color: $cinza-texto;
+  font-style: italic;
+  padding: 10px 0;
+}
 
-  @media (max-width: 768px) {
-    width: 100%;
+.appointment-card {
+  background-color: $branco;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 15px;
+  border-left: 6px solid $azul-claro;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
   }
-}
 
-.appointment {
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 10px;
-}
+  .appointment-info p {
+    color: $cinza-texto;
+    margin: 5px 0;
+    font-size: 0.95rem;
 
-h3 {
-  color: #1976d2;
-}
-
-.schedule-btn {
-  margin-top: 20px;
-  width: 100%;
-
-  @media (min-width: 769px) {
-    width: auto;
+    strong {
+      color: $azul-escuro;
+    }
   }
 }
 
@@ -79,49 +108,118 @@ h3 {
   display: flex;
   align-items: center;
   gap: 15px;
-  margin-top: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
   flex-wrap: wrap;
 }
 
-mat-icon {
-  font-size: 24px;
+/*botoes*/
+.custom-btn {
+  border-radius: 25px !important; 
+  font-weight: bold !important;
+  padding: 0 25px !important;
+  height: 40px !important;
+  transition: all 0.2s !important;
+  
+  &.primary-btn {
+    background-color: $laranja !important;
+    color: $branco !important;
+
+    &:hover:not(:disabled) {
+      background-color: darken($laranja, 10%) !important;
+    }
+  }
+
+  &.outline-btn {
+    background-color: transparent !important;
+    color: $azul-escuro !important;
+    border: 2px solid $azul-escuro !important;
+
+    &:hover:not(:disabled) {
+      background-color: rgba($azul-escuro, 0.1) !important;
+    }
+  }
+
+  &:disabled {
+    background-color: #e0e0e0 !important; 
+    color: #9e9e9e !important;           
+    border-color: #e0e0e0 !important;
+    cursor: not-allowed !important;
+  }
 }
 
-.custom-btn {
-  background-color: #0d47a1 !important;
-  color: #fff !important;
+.schedule-btn {
+  margin-top: 25px;
+  width: 100%;
+  height: 48px !important; 
+  font-size: 1.1rem !important;
+
+  @media (min-width: 769px) {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+.action-icon {
+  cursor: pointer;
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+  transition: transform 0.2s, color 0.2s;
+
+  &.edit-icon {
+    color: $azul-claro;
+    &:hover {
+      color: $azul-escuro;
+      transform: scale(1.15);
+    }
+  }
+
+  &.delete-icon {
+    color: rgba($vermelho-erro, 0.7);
+    &:hover {
+      color: $vermelho-erro;
+      transform: scale(1.15);
+    }
+  }
+}
+
+.mat-chip {
+  font-weight: bold !important;
+  letter-spacing: 0.5px;
+  
+  &.aceito {
+    background-color: $verde-sucesso !important; 
+    color: $branco !important;
+    opacity: 1 !important; 
+  }
+  
+  &.rejeitado {
+    background-color: $vermelho-erro !important; 
+    color: $branco !important;
+    opacity: 1 !important;
+  }
+}
+
+/*calendario*/
+.demo-inline-calendar-card {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+  }
 }
 
 ::ng-deep .mat-calendar-body-selected {
-  background-color: #0d47a1 !important;
-  color: white !important;
+  background-color: $azul-escuro !important;
+  color: $branco !important;
+  font-weight: bold;
 }
 
-.edit-icon,
-.delete-icon {
-  cursor: pointer;
-  font-size: 24px;
-  transition: transform 0.2s;
-}
-
-.edit-icon:hover {
-  color: #1976d2;
-  transform: scale(1.2);
-}
-
-.delete-icon:hover {
-  color: red;
-  transform: scale(1.2);
-}
-
-.status-msg {
-  font-size: 13px;
-  color: gray;
-  margin-top: 5px;
-}
-.custom-btn:disabled {
-  background-color: #b0bec5 !important; 
-  color: #eceff1 !important;
-  cursor: not-allowed !important;
-  opacity: 1 !important;
+::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) {
+  border-color: $laranja !important; 
 }

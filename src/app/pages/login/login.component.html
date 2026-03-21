@@ -1,69 +1,61 @@
 <div class="login-container">
-  <h1 class="app-title">Interpront</h1>
-  <mat-card class="login-card">
-    <h2>Login</h2>
+  
+  <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
     
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <mat-form-field appearance="fill" class="full-width" floatLabel="always">
-        <mat-label>Email</mat-label>
-        <input matInput formControlName="email" type="email">
-        <mat-error *ngIf="loginForm.controls['email'].invalid && loginForm.controls['email'].touched">
-          Por favor, digite um email válido.
-        </mat-error>
-      </mat-form-field>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email">
       
+      <div class="error-bubble" *ngIf="loginForm.controls['email'].invalid && loginForm.controls['email'].touched">
+        Por favor, digite um email válido.
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Senha</label>
+      <input id="password" type="password" formControlName="password">
       
-      <mat-form-field appearance="fill" class="full-width" floatLabel="always">
-        <mat-label>Senha</mat-label>
-        <input matInput formControlName="password" type="password">
-        <mat-error *ngIf="loginForm.controls['password'].invalid && loginForm.controls['password'].touched">
-          A senha deve ter pelo menos 6 caracteres.
-        </mat-error>
-      </mat-form-field>
-      <!-- Link "Esqueci minha senha" -->
-      <div class="recuperar-senha-link">
-        <a href="#" (click)="abrirDialogRecuperarSenha(); $event.preventDefault();">Esqueci minha senha</a>
+      <div class="error-bubble" *ngIf="loginForm.controls['password'].invalid && loginForm.controls['password'].touched">
+        A senha deve ter pelo menos 6 caracteres.
       </div>
 
-      <button mat-raised-button color="accent" class="full-width" type="submit">
-        Entrar
-      </button>
+      <a href="#" class="forgot-link" (click)="abrirDialogRecuperarSenha(); $event.preventDefault();">
+        Esqueci minha senha
+      </a>
+    </div>
 
+    <button type="submit" class="btn-entrar">
+      Entrar
+    </button>
 
+    <div class="error-bubble form-general-error" *ngIf="formInvalido">
+      Preencha todos os campos corretamente.
+    </div>
+    <div class="error-bubble form-general-error" *ngIf="loginFalhou">
+      Email ou senha incorretos.
+    </div>
+  </form>
 
-      <mat-error *ngIf="formInvalido" class="error-message">
-        Preencha todos os campos corretamente.
-      </mat-error>
-
-      <mat-error *ngIf="loginFalhou" class="error-message">
-        Email ou senha incorretos.
-      </mat-error>
-
-    </form>
-  </mat-card>
-</div>
-
-<div class="footer-text-container">
-  <p class="footer-text">Prontuário Interdisciplinar UNICENTRO</p>
+  <div class="logos-container">
+    <img src="assets/img/unicentro-logo.png" alt="Unicentro" class="logo">
+    <img src="assets/img/saude-logo.png" alt="Saúde" class="logo">
+  </div>
 </div>
 
 <ng-template #dialogRecuperarSenha>
   <h2 mat-dialog-title>Recuperar Senha</h2>
   <mat-dialog-content>
     <p>Informe seu email para redefinir sua senha:</p>
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="fill" style="width: 100%; margin-top: 10px;">
       <mat-label>Email</mat-label>
       <input matInput [(ngModel)]="emailRecuperacao" type="email">
     </mat-form-field>
-    <div *ngIf="recuperacaoEmailErro" class="text-danger" style="font-size: 13px; margin-top: 4px;">
+    <div *ngIf="recuperacaoEmailErro" style="color: #b61629; font-size: 13px; margin-top: 4px;">
       Erro ao enviar. Verifique se o e-mail está correto.
     </div>
-
-
   </mat-dialog-content>
   <mat-dialog-actions align="end">
     <button mat-button (click)="dialogRef.close()">Cancelar</button>
-    <button mat-raised-button class="custom-btn" (click)="enviarRecuperacaoSenha()">Enviar</button>
-
+    <button mat-raised-button style="background-color: #d48321; color: white;" (click)="enviarRecuperacaoSenha()">Enviar</button>
   </mat-dialog-actions>
 </ng-template>

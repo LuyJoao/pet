@@ -1,53 +1,62 @@
-<h1 mat-dialog-title>{{ data.agendamento ? 'Editar' : 'Agendar' }} Atendimento</h1>
-<p>Data Selecionada: {{ data.dataSelecionada | date: 'dd/MM/yyyy' }}</p>
-<div mat-dialog-content>
-  <form [formGroup]="agendamentoForm">
-    <mat-form-field appearance="fill">
-      <mat-label>Hora*</mat-label>
-      <input matInput type="time" formControlName="hora">
-    </mat-form-field>
-    
-    <mat-form-field appearance="fill">
-      <mat-label>Buscar Paciente*</mat-label>
-      <input type="text" matInput formControlName="nome" [matAutocomplete]="autoPaciente">
-      <mat-autocomplete #autoPaciente="matAutocomplete">
-        <mat-option *ngFor="let paciente of pacientesFiltrados$ | async" [value]="paciente.nome">
-          {{ paciente.nome }}
-        </mat-option>
-      </mat-autocomplete>
-       <mat-error *ngIf="agendamentoForm.get('nome')?.hasError('selecaoInvalida')">
-        Selecione um paciente válido da lista.
-      </mat-error>
-    </mat-form-field>
+<div class="modal-inner-container">
+  <div class="dialog-header">
+    <h1 class="dialog-title">{{ data.agendamento ? 'Editar' : 'Agendar' }} Atendimento</h1>
+    <p class="dialog-subtitle">Data Selecionada: {{ data.dataSelecionada | date: 'dd/MM/yyyy' }}</p>
+  </div>
 
-    <mat-form-field appearance="fill">
-      <mat-label>Estagiário*</mat-label>
-      <input type="text" matInput formControlName="estagiarioNome" [matAutocomplete]="autoEstagiario">
-      <mat-autocomplete #autoEstagiario="matAutocomplete">
-        <mat-option *ngFor="let estagiario of estagiariosFiltrados$ | async" [value]="estagiario.nome">
-          {{ estagiario.nome }}
-        </mat-option>
-      </mat-autocomplete>
-       <mat-error *ngIf="agendamentoForm.get('estagiarioNome')?.hasError('selecaoInvalida')">
-        Selecione um estagiário válido da lista.
-      </mat-error>
-    </mat-form-field>
+  <div class="dialog-content">
+    <form [formGroup]="agendamentoForm" class="custom-form">
 
-    <mat-form-field appearance="fill">
-      <mat-label>Professor Responsável*</mat-label>
-      <input type="text" matInput formControlName="professorResponsavelNome" [matAutocomplete]="autoProfessor">
-      <mat-autocomplete #autoProfessor="matAutocomplete">
-        <mat-option *ngFor="let professor of professoresFiltrados$ | async" [value]="professor.nome">
-          {{ professor.nome }}
-        </mat-option>
-      </mat-autocomplete>
-      <mat-error *ngIf="agendamentoForm.get('professorResponsavelNome')?.hasError('selecaoInvalida')">
-        Selecione um professor válido da lista.
-      </mat-error>
-    </mat-form-field>
-  </form>
-</div>
-<div mat-dialog-actions align="end">
-  <button mat-button (click)="fechar()">Cancelar</button>
-  <button mat-raised-button color="primary" (click)="salvar()" [disabled]="agendamentoForm.invalid">Salvar</button>
+      <div class="input-wrapper">
+        <input type="time" class="custom-input" formControlName="hora" placeholder="Horário">
+      </div>
+
+      <div class="input-wrapper">
+        <input type="text" class="custom-input" formControlName="nome" placeholder="Buscar Paciente"
+          [matAutocomplete]="autoPaciente">
+        <mat-autocomplete #autoPaciente="matAutocomplete">
+          <mat-option *ngFor="let paciente of pacientesFiltrados$ | async" [value]="paciente.nome">
+            {{ paciente.nome }}
+          </mat-option>
+        </mat-autocomplete>
+        <div class="error-text"
+          *ngIf="agendamentoForm.get('nome')?.hasError('selecaoInvalida') && agendamentoForm.get('nome')?.touched">
+          Selecione um paciente válido da lista.
+        </div>
+      </div>
+
+      <div class="input-wrapper">
+        <input type="text" class="custom-input" formControlName="estagiarioNome" placeholder="Estagiário"
+          [matAutocomplete]="autoEstagiario">
+        <mat-autocomplete #autoEstagiario="matAutocomplete">
+          <mat-option *ngFor="let estagiario of estagiariosFiltrados$ | async" [value]="estagiario.nome">
+            {{ estagiario.nome }}
+          </mat-option>
+        </mat-autocomplete>
+        <div class="error-text"
+          *ngIf="agendamentoForm.get('estagiarioNome')?.hasError('selecaoInvalida') && agendamentoForm.get('estagiarioNome')?.touched">
+          Selecione um estagiário válido da lista.
+        </div>
+      </div>
+
+      <div class="input-wrapper">
+        <input type="text" class="custom-input" formControlName="professorResponsavelNome"
+          placeholder="Professor Responsável" [matAutocomplete]="autoProfessor">
+        <mat-autocomplete #autoProfessor="matAutocomplete">
+          <mat-option *ngFor="let professor of professoresFiltrados$ | async" [value]="professor.nome">
+            {{ professor.nome }}
+          </mat-option>
+        </mat-autocomplete>
+        <div class="error-text"
+          *ngIf="agendamentoForm.get('professorResponsavelNome')?.hasError('selecaoInvalida') && agendamentoForm.get('professorResponsavelNome')?.touched">
+          Selecione um professor válido da lista.
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn-cancel" (click)="fechar()">Cancelar</button>
+    <button class="btn-save" (click)="salvar()" [disabled]="agendamentoForm.invalid">Salvar</button>
+  </div>
 </div>

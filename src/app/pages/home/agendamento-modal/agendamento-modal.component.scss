@@ -1,20 +1,113 @@
-.modal-content {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  mat-form-field {
-    width: 100%;
+/*container principal*/
+.modal-inner-container {
+  padding: 30px 40px; 
+  background-color: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+/*cabecalho*/
+.dialog-header {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 30px;
+
+  .dialog-title {
+    font-size: 1.8rem;
+    color: #000;
+    margin: 0 0 5px 0;
+    font-weight: 400; 
   }
 
-  .custom-btn {
-    background-color: #0d47a1 !important;
-    color: #fff !important;
+  .dialog-subtitle {
+    font-size: 1.1rem;
+    color: #000;
+    margin: 0;
   }
-  .error-message {
-    color: red;
-    margin-top: 10px;
-    font-size: 14px;
+}
+
+/*formulario*/
+.dialog-content {
+  padding: 0; 
+}
+
+.custom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px; 
+}
+
+.input-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+/*colocar as informacoes*/
+.custom-input {
+  width: 100%;
+  background-color: #cdd8e4; 
+  border: none;
+  border-radius: 6px; 
+  padding: 16px 20px;
+  font-size: 1rem;
+  color: #111;
+  box-sizing: border-box;
+  outline: none;
+  transition: box-shadow 0.2s;
+
+  &::placeholder {
+    color: #333; 
   }
-  
+
+  &:focus {
+    box-shadow: 0 0 0 2px #8ab5de; 
+  }
+}
+
+.error-text {
+  color: #d32f2f;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+  margin-top: 40px;
+  padding-bottom: 10px;
+}
+
+.btn-cancel {
+  background: none;
+  border: none;
+  color: #000;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 10px 15px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.btn-save {
+  background-color: #8ab5de; 
+  color: #000; 
+  border: none;
+  border-radius: 20px; 
+  padding: 10px 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: darken(#8ab5de, 10%);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
