@@ -50,10 +50,21 @@ export class AgendamentoModalComponent implements OnInit {
     this.configurarAutocompletes();
   }
 
-  private carregarDadosIniciais(): void {
-    this.pacienteService.obterPacientes().subscribe(data => this.todosOsPacientes = data);
-    this.estagiarioService.buscarEstagiariosPorNome('').subscribe(data => this.todosOsEstagiarios = data);
-    this.usuarioService.obterProfessores().subscribe(data => this.todosOsProfessores = data);
+private carregarDadosIniciais(): void {
+    this.pacienteService.obterPacientes().subscribe(data => {
+      this.todosOsPacientes = data;
+      this.agendamentoForm.get('nome')?.updateValueAndValidity();
+    });
+
+    this.estagiarioService.buscarEstagiariosPorNome('').subscribe(data => {
+      this.todosOsEstagiarios = data;
+      this.agendamentoForm.get('estagiarioNome')?.updateValueAndValidity();
+    });
+
+    this.usuarioService.obterProfessores().subscribe(data => {
+      this.todosOsProfessores = data;
+      this.agendamentoForm.get('professorResponsavelNome')?.updateValueAndValidity();
+    });
   }
   
   private configurarAutocompletes(): void {

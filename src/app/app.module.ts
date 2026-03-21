@@ -52,6 +52,14 @@ import { AvaliacaoAtendimentoComponent } from './pages/avaliacao-atendimento/ava
 import { MatChipsModule } from '@angular/material/chips';
 import { HistoricoAtendimentosComponent } from './pages/historico-atendimentos/historico-atendimentos.component';
 
+import { LOCALE_ID } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
+
+// deixar em portugues
+registerLocaleData(localePt);
+
 
 @NgModule({
   declarations: [
@@ -106,7 +114,9 @@ import { HistoricoAtendimentosComponent } from './pages/historico-atendimentos/h
     provideAnimationsAsync(),
     provideFirebaseApp(() => initializeApp({"projectId":"interpront-4f172","appId":"1:980688439092:web:237a89b99c1c5514590761","storageBucket":"interpront-4f172.firebasestorage.app","apiKey":"AIzaSyCklXu3kq4XUq355NK40L4CsXTFsVrR1yw","authDomain":"interpront-4f172.firebaseapp.com","messagingSenderId":"980688439092"})),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore())
+    provideFirestore(() => getFirestore()),
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
+    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' }
   ],
   bootstrap: [AppComponent]
 })

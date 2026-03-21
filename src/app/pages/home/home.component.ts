@@ -101,7 +101,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   
     const dialogRef = this.dialog.open(AgendamentoModalComponent, {
-      width: '400px',
+      width: '800px',
       data: { dataSelecionada: this.selected, agendamento: agendamento || null, autoFocus: false },
     });
   
