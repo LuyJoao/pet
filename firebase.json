@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/projeto-interpront",
+    "public": "dist/projeto-interpront/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
