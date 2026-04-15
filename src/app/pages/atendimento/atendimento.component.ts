@@ -138,7 +138,7 @@ export class AtendimentoComponent implements OnInit {
     const dados = this.atendimentoForm.getRawValue(); // pega o conteúdo atual do formulário
 
     const img = new Image();
-    img.src = 'assets/logo.png';
+    img.src = 'assets/img/logo.png';
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
