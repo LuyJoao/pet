@@ -42,6 +42,36 @@ export class AgendamentoService {
     this.atendimentosCollection = this.firestore.collection<Agendamento>('atendimentos');
   }
 
+  // NOVA FUNÇÃO: Busca todos os pendentes no banco inteiro (passados e futuros)
+  obterTodosPendentes(): Observable<Agendamento[]> {
+    return this.firestore.collection<Agendamento>('agendamentos', ref =>
+      ref.where('status', '==', 'pendente')
+        .orderBy('data', 'asc') // Ordena do mais antigo para o mais novo
+    ).snapshotChanges().pipe(
+      map(actions => actions.map(a => ({ id: a.payload.doc.id, ...a.payload.doc.data() })))
+    );
+  }
+
+  obterPendentesDoEstagiario(estagiarioUid: string): Observable<Agendamento[]> {
+    return this.firestore.collection<Agendamento>('agendamentos', ref =>
+      ref.where('status', '==', 'pendente')
+        .where('estagiarioUid', '==', estagiarioUid)
+        .orderBy('data', 'asc')
+    ).snapshotChanges().pipe(
+      map(actions => actions.map(a => ({ id: a.payload.doc.id, ...a.payload.doc.data() })))
+    );
+  }
+
+  obterPendentesDoProfessor(professorUid: string): Observable<Agendamento[]> {
+    return this.firestore.collection<Agendamento>('agendamentos', ref =>
+      ref.where('status', '==', 'pendente')
+        .where('professorResponsavelUid', '==', professorUid)
+        .orderBy('data', 'asc')
+    ).snapshotChanges().pipe(
+      map(actions => actions.map(a => ({ id: a.payload.doc.id, ...a.payload.doc.data() })))
+    );
+  }
+
   obterAgendamentosPorData(data: Date): Observable<Agendamento[]> {
     const dataFormatada = data.toISOString().split('T')[0];
     return this.firestore.collection<Agendamento>('agendamentos', ref => ref.where('data', '==', dataFormatada))

@@ -11,6 +11,7 @@ import { takeUntil } from 'rxjs/operators';
 export class MenuComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   tipoUsuario: string | null = null;
+  menuAberto: boolean = false; // Controle da gaveta no mobile
   
   constructor(private authService: AuthService) {}
 
@@ -31,7 +32,13 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // Função que abre e fecha o menu do celular
+  toggleMenu() {
+    this.menuAberto = !this.menuAberto;
+  }
+
   logout() {
+    this.menuAberto = false; // Garante que o menu feche ao sair
     this.authService.logout();
   }
 }
