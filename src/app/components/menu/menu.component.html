@@ -1,17 +1,42 @@
 <div class="navbar">
-  <div class="logo-img">
+  <div class="logo-img-container">
     <img src="assets/img/pet_logo_com_escrito.png" alt="Logo Interpront" class="logo-img">
   </div>
-  <div class="menu">
+  
+  <div class="menu desktop-menu">
     <a routerLink="/home" class="menu-item">Home</a>
     <a routerLink="/pacientes" class="menu-item">Pacientes</a>
     
     <a *ngIf="tipoUsuario === 'Secretaria'" routerLink="/usuarios" class="menu-item">Usuários</a>
-    
     <a *ngIf="tipoUsuario === 'Professor'" routerLink="/estagiarios" class="menu-item">Estagiários</a>
-    
     <a *ngIf="tipoUsuario === 'Professor' || tipoUsuario === 'Estagiário'" routerLink="/historico-atendimentos" class="menu-item">Atendimentos</a>
     
     <a (click)="logout()" class="menu-item logout">Sair</a>
   </div>
+
+  <button class="mobile-menu-btn" (click)="toggleMenu()">
+    ☰
+  </button>
 </div>
+
+<div class="mobile-sidenav" [class.aberto]="menuAberto">
+  <div class="sidenav-header">
+    <img src="assets/img/pet_logo_com_escrito.png" alt="Logo Interpront" class="logo-sidenav">
+    <button class="close-btn" (click)="toggleMenu()">✕</button>
+  </div>
+
+  <div class="sidenav-links">
+    <a routerLink="/home" class="sidenav-item" (click)="toggleMenu()">Home</a>
+    <a routerLink="/pacientes" class="sidenav-item" (click)="toggleMenu()">Pacientes</a>
+    
+    <a *ngIf="tipoUsuario === 'Secretaria'" routerLink="/usuarios" class="sidenav-item" (click)="toggleMenu()">Usuários</a>
+    <a *ngIf="tipoUsuario === 'Professor'" routerLink="/estagiarios" class="sidenav-item" (click)="toggleMenu()">Estagiários</a>
+    <a *ngIf="tipoUsuario === 'Professor' || tipoUsuario === 'Estagiário'" routerLink="/historico-atendimentos" class="sidenav-item" (click)="toggleMenu()">Atendimentos</a>
+  </div>
+
+  <div class="sidenav-footer">
+    <a (click)="logout()" class="sidenav-item logout-sidenav">Sair</a>
+  </div>
+</div>
+
+<div class="sidenav-backdrop" *ngIf="menuAberto" (click)="toggleMenu()"></div>
