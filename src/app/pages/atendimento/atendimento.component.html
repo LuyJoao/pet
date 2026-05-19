@@ -1,6 +1,15 @@
 <app-menu></app-menu>
 
 <div class="atendimento-container">
+
+  <div class="upload-container" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+    <input type="file" #fileInput style="display: none;" (change)="onArquivoSelecionado($event)">
+
+    <button mat-stroked-button color="primary" (click)="fileInput.click()">
+      <mat-icon style="margin-right: 5px;">attach_file</mat-icon>
+      Adicionar Arquivo
+    </button>
+  </div>
   <div class="info-header">
     <h2>Dados do Atendimento</h2>
     <p><strong>Paciente:</strong> {{ nome || 'Carregando...' }}</p>
