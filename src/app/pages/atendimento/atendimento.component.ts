@@ -25,6 +25,9 @@ export class AtendimentoComponent implements OnInit {
   private professorResponsavelUid: string | null = null;
   private professorResponsavelNome: string | null = null;
 
+  // --- NOVA VARIÁVEL PARA O ARQUIVO ---
+  arquivoSelecionado: File | null = null;
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -68,6 +71,22 @@ export class AtendimentoComponent implements OnInit {
         this.estagiarioUid = user.uid;
       }
     });
+  }
+
+  // --- NOVA FUNÇÃO DE ARQUIVO ---
+  onArquivoSelecionado(event: any): void {
+    const file: File = event.target.files[0];
+    
+    if (file) {
+      this.arquivoSelecionado = file;
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Arquivo anexado!',
+        text: `O arquivo "${file.name}" está pronto para ser enviado junto com o atendimento.`,
+        confirmButtonColor: '#0d47a1'
+      });
+    }
   }
 
   async salvarAtendimento(): Promise<void> {
@@ -120,7 +139,6 @@ export class AtendimentoComponent implements OnInit {
     }
   }
 
-
   cancelar(): void {
     this.router.navigate(['/home']);
   }
@@ -134,33 +152,27 @@ export class AtendimentoComponent implements OnInit {
     });
   }
 
+  // --- FUNÇÃO DE GERAR PDF ATUALIZADA (COM PROTEÇÃO CONTRA ERRO DE IMAGEM) ---
   private gerarPDF(camposSelecionados: any) {
-    const dados = this.atendimentoForm.getRawValue(); // pega o conteúdo atual do formulário
+    const dados = this.atendimentoForm.getRawValue();
 
-    const img = new Image();
-    img.src = 'assets/img/logo.png';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      const imgData = canvas.toDataURL('image/png');
+    const doc = new jsPDF();
+    const margin = 20;
+    const lineHeight = 8;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let y = 20;
 
-      const doc = new jsPDF();
-      const margin = 20;
-      const lineHeight = 8;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let y = 20;
-
-      const imgWidth = 50;
-      const imgX = (pageWidth - imgWidth) / 2;
-      doc.addImage(imgData, 'PNG', imgX, y - 10, imgWidth, 20);
-      y += 25;
+    const construirEDownloadPDF = (imgData?: string) => {
+      if (imgData) {
+        const imgWidth = 50;
+        const imgX = (pageWidth - imgWidth) / 2;
+        doc.addImage(imgData, 'PNG', imgX, y - 10, imgWidth, 20);
+        y += 25;
+      }
 
       doc.setFontSize(14);
-      doc.text(`Atendimento - ${this.nome} (${this.idade} anos)`, margin, y);
+      doc.text(`Atendimento - ${this.nome || 'Paciente'} (${this.idade || ''} anos)`, margin, y);
       y += 15;
 
       const addText = (titulo: string, conteudo: string | undefined) => {
@@ -192,14 +204,33 @@ export class AtendimentoComponent implements OnInit {
         footerY2
       );
 
-      doc.save(`atendimento_${this.nome}.pdf`);
+      const nomeArquivo = `atendimento_${this.nome || 'paciente'}.pdf`;
+      doc.save(nomeArquivo);
 
       Swal.fire({
         icon: 'success',
         title: 'PDF gerado com sucesso!',
-        text: `O arquivo "atendimento_${this.nome}.pdf" foi baixado.`,
+        text: `O arquivo "${nomeArquivo}" foi baixado.`,
         confirmButtonColor: '#0d47a1'
       });
+    };
+
+    const img = new Image();
+    img.src = '/assets/img/logo.png'; 
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const imgData = canvas.toDataURL('image/png');
+      construirEDownloadPDF(imgData);
+    };
+
+    img.onerror = () => {
+      console.warn('A imagem da logo não foi encontrada. Gerando o PDF sem ela.');
+      construirEDownloadPDF(); 
     };
   }
 }
