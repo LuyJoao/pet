@@ -11,12 +11,9 @@ import Swal from 'sweetalert2';
 })
 export class LoginComponent {
   loginForm: FormGroup;
-  
-  // Estas são as variáveis que o seu HTML está usando
   formInvalido: boolean = false;
   loginFalhou: boolean = false;
 
-  // Variáveis para o diálogo
   emailRecuperacao: string = '';
   recuperacaoEmailErro: boolean = false;
   dialogRef!: MatDialogRef<any>;
@@ -34,7 +31,7 @@ export class LoginComponent {
     });
   }
 
-onSubmit() {
+  onSubmit(): void {
     this.formInvalido = this.loginForm.invalid;
 
     if (this.formInvalido) {
@@ -43,6 +40,7 @@ onSubmit() {
     }
 
     const { email, password } = this.loginForm.value;
+
     this.authService.login(email, password)
       .then(() => {
         this.loginFalhou = false;
@@ -64,7 +62,7 @@ onSubmit() {
     this.authService.enviarEmailRedefinicaoSenha(this.emailRecuperacao)
       .then(() => {
         this.dialogRef.close();
-         Swal.fire({
+        Swal.fire({
           icon: 'success',
           title: 'E-mail enviado!',
           text: 'Verifique sua caixa de entrada para redefinir sua senha.',

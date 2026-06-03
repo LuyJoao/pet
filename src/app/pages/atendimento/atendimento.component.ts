@@ -15,17 +15,20 @@ import { MatDialog } from '@angular/material/dialog';
 })
 export class AtendimentoComponent implements OnInit {
   atendimentoForm: FormGroup;
+
   agendamentoId: string | null = null;
+  registroAtendimentoId: string | null = null;
+
   pacienteId: string | null = null;
   nome: string | null = null;
   idade: number | null = null;
   estagiarioNome: string | null = null;
   dataAtendimento: string | null = null;
+
   private estagiarioUid: string | null = null;
   private professorResponsavelUid: string | null = null;
   private professorResponsavelNome: string | null = null;
 
-  // --- NOVA VARIÁVEL PARA O ARQUIVO ---
   arquivoSelecionado: File | null = null;
 
   constructor(
@@ -52,14 +55,17 @@ export class AtendimentoComponent implements OnInit {
       this.agendamentoId = params['id'];
       this.pacienteId = params['pacienteId'];
       this.nome = params['nome'];
-      this.idade = params['idade'];
+      const parseIdade = Number(params['idade']);
+      this.idade = isNaN(parseIdade) ? null : parseIdade;
       this.dataAtendimento = params['data'];
       this.professorResponsavelNome = params['professorNome'];
       this.professorResponsavelUid = params['professorUid'];
 
       if (this.agendamentoId) {
-        const atendimentoExistente = await this.agendamentoService.obterAtendimentoPorId(this.agendamentoId);
-        if (atendimentoExistente) {
+        const atendimentoExistente = await this.agendamentoService.getAtendimentoPorAgendamentoId(this.agendamentoId);
+
+        if (atendimentoExistente && atendimentoExistente.id) {
+          this.registroAtendimentoId = atendimentoExistente.id;
           this.atendimentoForm.patchValue(atendimentoExistente);
         }
       }
@@ -67,23 +73,21 @@ export class AtendimentoComponent implements OnInit {
 
     this.authService.getUsuarioLogado().then(user => {
       if (user) {
-        this.estagiarioNome = user.nome;
-        this.estagiarioUid = user.uid;
+        this.estagiarioNome = user.name || user.nome;
+        this.estagiarioUid = user.id || user.uid;
       }
     });
   }
 
-  // --- NOVA FUNÇÃO DE ARQUIVO ---
   onArquivoSelecionado(event: any): void {
     const file: File = event.target.files[0];
-    
+
     if (file) {
       this.arquivoSelecionado = file;
-      
       Swal.fire({
         icon: 'success',
         title: 'Arquivo anexado!',
-        text: `O arquivo "${file.name}" está pronto para ser enviado junto com o atendimento.`,
+        text: `O arquivo "${file.name}" será salvo junto com o atendimento.`,
         confirmButtonColor: '#0d47a1'
       });
     }
@@ -96,43 +100,48 @@ export class AtendimentoComponent implements OnInit {
       return;
     }
 
-    if (!this.agendamentoId) {
-      Swal.fire('Erro Crítico', 'Não foi possível identificar o atendimento.', 'error');
+    if (!this.agendamentoId || !this.pacienteId || !this.estagiarioUid) {
+      Swal.fire('Erro Crítico', 'Faltam dados de identificação essenciais (ID do Paciente ou Estagiário).', 'error');
       return;
     }
 
-    const dados = this.atendimentoForm.value;
+    const payloadAtendimento: Agendamento = {
+      ...this.atendimentoForm.value,
+      agendamentoId: this.agendamentoId,
+      pacienteId: this.pacienteId,
+      estagiarioUid: this.estagiarioUid,
+      status: 'pendente'
+    };
 
     try {
-      const atendimentoExistente = await this.agendamentoService.obterAtendimentoPorId(this.agendamentoId);
+      let recordIdReal = this.registroAtendimentoId;
 
-      if (atendimentoExistente) {
-        await this.agendamentoService.atualizarAtendimento(this.agendamentoId, dados);
-        Swal.fire('Sucesso!', 'Atendimento atualizado com sucesso.', 'success');
+      if (this.registroAtendimentoId) {
+        // Atualiza usando o ID do 'records'
+        await this.agendamentoService.atualizarAtendimento(this.registroAtendimentoId, payloadAtendimento);
       } else {
-        const atendimentoNovo: Agendamento = {
-          ...dados,
-          agendamentoId: this.agendamentoId,
-          pacienteId: this.pacienteId!,
-          nome: this.nome!,
-          idade: this.idade!,
-          data: this.dataAtendimento!,
-          hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          status: 'pendente',
-          estagiarioNome: this.estagiarioNome!,
-          estagiarioUid: this.estagiarioUid!,
-          professorResponsavelNome: this.professorResponsavelNome!,
-          professorResponsavelUid: this.professorResponsavelUid!
-        };
-
-        await this.agendamentoService.criarAtendimento(atendimentoNovo);
-
-        await this.agendamentoService.marcarAgendamentoComoFinalizado(this.agendamentoId);
-
-        Swal.fire('Sucesso!', 'Atendimento criado e finalizado com sucesso.', 'success');
+        // Cria um novo
+        const respostaNovoRecord = await this.agendamentoService.criarAtendimento(payloadAtendimento);
+        recordIdReal = respostaNovoRecord.id;
       }
 
+      // CORREÇÃO: Puxamos isso para fora do if/else! Agora ele sempre garante que o agendamento seja finalizado.
+      await this.agendamentoService.marcarAgendamentoComoFinalizado(this.agendamentoId);
+
+      // Envia o arquivo se houver um selecionado
+      if (this.arquivoSelecionado && recordIdReal) {
+        try {
+          await this.agendamentoService.uploadDocumentoAtendimento(recordIdReal, this.arquivoSelecionado);
+        } catch (uploadError) {
+          console.warn('Erro ao anexar arquivo:', uploadError);
+          Swal.fire('Aviso', 'O atendimento foi salvo, mas houve uma falha ao enviar o anexo.', 'warning');
+          return; // Para não exibir a mensagem de sucesso total se o arquivo falhar
+        }
+      }
+
+      Swal.fire('Sucesso!', 'Atendimento salvo e finalizado com sucesso.', 'success');
       this.router.navigate(['/home']);
+
     } catch (error) {
       console.error('Erro ao salvar atendimento:', error);
       Swal.fire('Erro!', 'Ocorreu um problema ao salvar o atendimento.', 'error');
@@ -145,14 +154,12 @@ export class AtendimentoComponent implements OnInit {
 
   abrirModalExportarPDF() {
     const dialogRef = this.dialog.open(ExportarPdfModalComponent, { width: '400px' });
-
     dialogRef.afterClosed().subscribe(camposSelecionados => {
       if (!camposSelecionados) return;
       this.gerarPDF(camposSelecionados);
     });
   }
 
-  // --- FUNÇÃO DE GERAR PDF ATUALIZADA (COM PROTEÇÃO CONTRA ERRO DE IMAGEM) ---
   private gerarPDF(camposSelecionados: any) {
     const dados = this.atendimentoForm.getRawValue();
 
@@ -216,7 +223,7 @@ export class AtendimentoComponent implements OnInit {
     };
 
     const img = new Image();
-    img.src = '/assets/img/logo.png'; 
+    img.src = '/assets/img/logo.png';
 
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -230,7 +237,7 @@ export class AtendimentoComponent implements OnInit {
 
     img.onerror = () => {
       console.warn('A imagem da logo não foi encontrada. Gerando o PDF sem ela.');
-      construirEDownloadPDF(); 
+      construirEDownloadPDF();
     };
   }
 }

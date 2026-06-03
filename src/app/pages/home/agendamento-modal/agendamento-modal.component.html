@@ -13,7 +13,7 @@
 
       <div class="input-wrapper">
         <input type="text" class="custom-input" formControlName="nome" placeholder="Buscar Paciente"
-          [matAutocomplete]="autoPaciente">
+          [matAutocomplete]="autoPaciente" autocomplete="off">
         <mat-autocomplete #autoPaciente="matAutocomplete">
           <mat-option *ngFor="let paciente of pacientesFiltrados$ | async" [value]="paciente.nome">
             {{ paciente.nome }}
@@ -27,10 +27,10 @@
 
       <div class="input-wrapper">
         <input type="text" class="custom-input" formControlName="estagiarioNome" placeholder="Estagiário"
-          [matAutocomplete]="autoEstagiario">
+          [matAutocomplete]="autoEstagiario" autocomplete="off">
         <mat-autocomplete #autoEstagiario="matAutocomplete">
-          <mat-option *ngFor="let estagiario of estagiariosFiltrados$ | async" [value]="estagiario.nome">
-            {{ estagiario.nome }}
+          <mat-option *ngFor="let estagiario of estagiariosFiltrados$ | async" [value]="estagiario.name || estagiario.nome">
+            {{ estagiario.name || estagiario.nome }}
           </mat-option>
         </mat-autocomplete>
         <div class="error-text"
@@ -41,10 +41,10 @@
 
       <div class="input-wrapper">
         <input type="text" class="custom-input" formControlName="professorResponsavelNome"
-          placeholder="Professor Responsável" [matAutocomplete]="autoProfessor">
+          placeholder="Professor Responsável" [matAutocomplete]="autoProfessor" autocomplete="off">
         <mat-autocomplete #autoProfessor="matAutocomplete">
-          <mat-option *ngFor="let professor of professoresFiltrados$ | async" [value]="professor.nome">
-            {{ professor.nome }}
+          <mat-option *ngFor="let professor of professoresFiltrados$ | async" [value]="professor.name || professor.nome">
+            {{ professor.name || professor.nome }}
           </mat-option>
         </mat-autocomplete>
         <div class="error-text"

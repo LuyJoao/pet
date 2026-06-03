@@ -26,6 +26,8 @@ export class HistoricoAtendimentosComponent implements OnInit, OnDestroy {
     ).subscribe(usuario => {
       if (!usuario) return;
 
+      const usuarioId = usuario.id || usuario.uid;
+
       if (usuario.tipo === 'Secretaria') {
         window.alert('Acesso negado para Secretaria!');
         window.history.back();
@@ -34,14 +36,14 @@ export class HistoricoAtendimentosComponent implements OnInit, OnDestroy {
 
       if (usuario.tipo === 'Estagiário') {
         this.tituloPagina = 'Meus Atendimentos Avaliados';
-        this.agendamentoService.obterAtendimentosAvaliadosPorEstagiario(usuario.uid)
+        this.agendamentoService.obterAtendimentosAvaliadosPorEstagiario(usuarioId)
           .pipe(takeUntil(this.destroy$))
           .subscribe(data => {
             this.atendimentos = data.sort((a, b) => new Date(b.data as string).getTime() - new Date(a.data as string).getTime());
           });
       } else if (usuario.tipo === 'Professor') {
         this.tituloPagina = 'Atendimentos que Avaliei';
-        this.agendamentoService.obterAtendimentosAvaliadosPorProfessor(usuario.uid)
+        this.agendamentoService.obterAtendimentosAvaliadosPorProfessor(usuarioId)
           .pipe(takeUntil(this.destroy$))
           .subscribe(data => {
             this.atendimentos = data.sort((a, b) => new Date(b.data as string).getTime() - new Date(a.data as string).getTime());

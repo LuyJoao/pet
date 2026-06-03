@@ -1,84 +1,67 @@
 import { Injectable } from '@angular/core';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { map, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, firstValueFrom, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Usuario {
-  uid: string;
-  nome: string;
+  id?: string;
+  name?: string;
   email: string;
-  tipo: string;
-  departamento: string;
+  password?: string;
+  old_password?: string;
+  password_confirmation?: string;
+  role?: string;
+  uid?: string;
+  nome?: string;
+  tipo?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class UsuarioService {
-  constructor(private firestore: AngularFirestore) {}
+  private apiUrl = environment.apiUrl;
+
+  constructor(private http: HttpClient) {}
 
   obterUsuarios(): Observable<Usuario[]> {
-    return this.firestore.collection<Usuario>('users')
-      .snapshotChanges()
-      .pipe(
-        map(actions => actions.map(a => {
-          const data = a.payload.doc.data() as Usuario;
-          const uid = a.payload.doc.id;
-          return { ...data, uid };
-        }))
-      );
+    return forkJoin({
+      secretarias: this.http.get<Usuario[]>(`${this.apiUrl}/secretarys`).pipe(catchError(() => of([]))),
+      professores: this.http.get<Usuario[]>(`${this.apiUrl}/professors`).pipe(catchError(() => of([]))),
+      estagiarios: this.http.get<Usuario[]>(`${this.apiUrl}/interns`).pipe(catchError(() => of([])))
+    }).pipe(
+      map(({ secretarias, professores, estagiarios }) => {
+        const secMapped = secretarias.map(s => ({ ...s, tipo: 'Secretaria', nome: s.name || s.nome, id: s.id || s.uid }));
+        const profMapped = professores.map(p => ({ ...p, tipo: 'Professor', nome: p.name || p.nome, id: p.id || p.uid }));
+        const estagMapped = estagiarios.map(e => ({ ...e, tipo: 'Estagiário', nome: e.name || e.nome, id: e.id || e.uid }));
+
+        return [...secMapped, ...profMapped, ...estagMapped];
+      })
+    );
   }
 
-  async excluirUsuario(uid: string): Promise<void> {
-    try {
-      await this.firestore.collection('users').doc(uid).delete();
-      console.log(`Usuário com UID ${uid} excluído do Firestore.`);
-    } catch (error) {
-      console.error("Erro ao excluir usuário do Firestore:", error);
-      throw error;
-    }
-  }
-
-  obterUsuariosPorTipo(tipo: string): Observable<Usuario[]> {
-    return this.firestore.collection<Usuario>('users', ref => ref.where('tipo', '==', tipo))
-      .snapshotChanges().pipe(
-        map(actions => actions.map(a => {
-          const data = a.payload.doc.data() as Usuario;
-          const uid = a.payload.doc.id;
-          return { ...data, uid };
-        }))
-      );
+  excluirUsuario(id: string, tipo?: string): Observable<void> {
+    if (tipo === 'Estagiário') return this.http.delete<void>(`${this.apiUrl}/interns/${id}`);
+    if (tipo === 'Professor') return this.http.delete<void>(`${this.apiUrl}/professors/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/secretarys/${id}`);
   }
 
   obterProfessores(): Observable<Usuario[]> {
-    return this.firestore.collection<Usuario>('users', ref => ref.where('tipo', '==', 'Professor'))
-      .snapshotChanges().pipe(
-        map(actions => actions.map(a => {
-          const data = a.payload.doc.data();
-          const uid = a.payload.doc.id;
-          return { ...data, uid };
-        }))
-      );
+    return this.http.get<Usuario[]>(`${this.apiUrl}/professors`);
   }
 
-  async criarUsuario(usuario: Usuario): Promise<void> {
-    try {
-      const ref = this.firestore.collection('users').doc();
-      await ref.set(usuario);
-      console.log('Usuário criado com sucesso:', usuario);
-    } catch (error) {
-      console.error('Erro ao criar usuário:', error);
-      throw error;
-    }
+  obterUsuariosPorTipo(tipo: string): Observable<Usuario[]> {
+    if (tipo === 'Estagiário') return this.http.get<Usuario[]>(`${this.apiUrl}/interns`);
+    if (tipo === 'Professor') return this.http.get<Usuario[]>(`${this.apiUrl}/professors`);
+    return this.http.get<Usuario[]>(`${this.apiUrl}/secretarys`);
   }
 
-  async atualizarUsuario(uid: string, dados: Partial<Usuario>): Promise<void> {
-    try {
-      await this.firestore.collection('users').doc(uid).update(dados);
-      console.log(`Usuário ${uid} atualizado com sucesso.`);
-    } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
-      throw error;
-    }
+  obterEstagiariosDoProfessor(professorId: string): Observable<Usuario[]> {
+    return this.http.get<Usuario[]>(`${this.apiUrl}/interns/professor/${professorId}`);
+  }
+
+  criarEstagiario(dados: any): Promise<any> {
+    return firstValueFrom(this.http.post(`${this.apiUrl}/interns`, dados));
   }
 }

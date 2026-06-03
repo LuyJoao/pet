@@ -6,7 +6,6 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import Swal from 'sweetalert2';
 import { AuthService } from '../../services/auth.service';
-import { first } from 'rxjs/operators';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -18,6 +17,7 @@ export class EstagiariosComponent implements OnInit {
   displayedColumns: string[] = ['nome', 'email', 'acoes'];
   dataSource = new MatTableDataSource<Usuario>();
   temPermissao = false;
+  usuarioLogado: any = null;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -29,24 +29,38 @@ export class EstagiariosComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.verificarPermissao();
-
-    this.usuarioService.obterUsuariosPorTipo('Estagiário').subscribe((estagiarios: Usuario[]) => {
-      this.dataSource.data = estagiarios;
-      this.dataSource.paginator = this.paginator;
-      this.dataSource.sort = this.sort;
-    });
+    this.iniciarTela();
   }
 
-  async verificarPermissao() {
+  async iniciarTela() {
+    this.usuarioLogado = await this.authService.getUsuarioLogado();
     this.temPermissao = await firstValueFrom(this.authService.podeGerenciarEstagiarios());
 
-    if (!this.temPermissao) {
+    if (!this.temPermissao || !this.usuarioLogado) {
       this.router.navigate(['/home']);
       Swal.fire('Acesso Negado', 'Você não tem permissão para acessar esta página.', 'error');
+      return;
+    }
+
+    const usuarioId = this.usuarioLogado.id || this.usuarioLogado.uid;
+    const tipoUsuario = this.usuarioLogado.tipo || this.usuarioLogado.role;
+
+    if (tipoUsuario === 'Professor') {
+      this.usuarioService.obterEstagiariosDoProfessor(usuarioId).subscribe((estagiarios: Usuario[]) => {
+        this.configurarTabela(estagiarios);
+      });
+    } else {
+      this.usuarioService.obterUsuariosPorTipo('Estagiário').subscribe((estagiarios: Usuario[]) => {
+        this.configurarTabela(estagiarios);
+      });
     }
   }
 
+  private configurarTabela(dados: Usuario[]) {
+    this.dataSource.data = dados;
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
+  }
 
   irParaCadastro(): void {
     this.router.navigate(['/cadastro']);
@@ -56,7 +70,6 @@ export class EstagiariosComponent implements OnInit {
     sessionStorage.setItem('usuarioEdicao', JSON.stringify(usuario));
     this.router.navigate(['/cadastro'], { queryParams: { contexto: 'estagiario' } });
   }
-
 
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
@@ -74,10 +87,11 @@ export class EstagiariosComponent implements OnInit {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6'
     }).then(async (result) => {
-      if (result.isConfirmed && usuario.uid) {
+      if (result.isConfirmed && (usuario.uid || usuario.id)) {
         try {
-          await this.usuarioService.excluirUsuario(usuario.uid);
+          await this.usuarioService.excluirUsuario(usuario.uid || usuario.id!);
           Swal.fire('Excluído!', 'O estagiário foi excluído do sistema.', 'success');
+          this.iniciarTela();
         } catch (error) {
           Swal.fire('Erro!', 'Erro ao excluir o estagiário.', 'error');
         }

@@ -1,11 +1,10 @@
 <div class="login-container">
-  
   <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-    
+
     <div class="form-group">
       <label for="email">Email</label>
       <input id="email" type="email" formControlName="email">
-      
+
       <div class="error-bubble" *ngIf="loginForm.controls['email'].invalid && loginForm.controls['email'].touched">
         Por favor, digite um email válido.
       </div>
@@ -14,7 +13,7 @@
     <div class="form-group">
       <label for="password">Senha</label>
       <input id="password" type="password" formControlName="password">
-      
+
       <div class="error-bubble" *ngIf="loginForm.controls['password'].invalid && loginForm.controls['password'].touched">
         A senha deve ter pelo menos 6 caracteres.
       </div>

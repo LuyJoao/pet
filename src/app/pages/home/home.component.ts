@@ -24,7 +24,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   tipoUsuario: string | null = null;
   usuarioLogado: any = null;
 
-  // Variável para armazenar a lista da Secretaria
   atendimentosPendentes$!: Observable<Agendamento[]>;
 
   constructor(
@@ -40,12 +39,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     ).subscribe(usuario => {
       if (usuario) {
         this.usuarioLogado = usuario;
-        this.tipoUsuario = usuario.tipo;
+        this.tipoUsuario = usuario.tipo || usuario.role;
+
+        const usuarioId = this.usuarioLogado.id || this.usuarioLogado.uid;
 
         if (this.tipoUsuario === 'Estagiário') {
-          this.atendimentosPendentes$ = this.agendamentoService.obterPendentesDoEstagiario(this.usuarioLogado.uid);
+          this.atendimentosPendentes$ = this.agendamentoService.obterPendentesDoEstagiario(usuarioId);
         } else if (this.tipoUsuario === 'Professor') {
-          this.atendimentosPendentes$ = this.agendamentoService.obterPendentesDoProfessor(this.usuarioLogado.uid);
+          this.atendimentosPendentes$ = this.agendamentoService.obterPendentesDoProfessor(usuarioId);
         }
 
         if (this.selected) {
@@ -74,20 +75,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.dataNoPassado = dataSelecionadaSemHoras < hojeSemHoras;
 
     let busca$: Observable<Agendamento[]>;
+    const usuarioId = this.usuarioLogado.id || this.usuarioLogado.uid;
 
     if (this.tipoUsuario === 'Secretaria') {
       busca$ = this.agendamentoService.obterAgendamentosPorData(data);
     } else if (this.tipoUsuario === 'Estagiário') {
-      busca$ = await this.agendamentoService.obterMeusAgendamentosPorData(data);
+      busca$ =  this.agendamentoService.obterMeusAgendamentosPorData(usuarioId, data);
     } else if (this.tipoUsuario === 'Professor') {
-      busca$ = await this.agendamentoService.obterAgendamentosPorProfessorResponsavel(this.usuarioLogado.uid, data);
+      busca$ = await this.agendamentoService.obterAgendamentosPorProfessorResponsavel(usuarioId, data);
     } else {
       this.agendamentos = [];
       return;
     }
 
     busca$.pipe(takeUntil(this.destroy$)).subscribe((agendamentos: Agendamento[]) => {
-      this.agendamentos = agendamentos.sort((a, b) => a.hora.localeCompare(b.hora));
+      this.agendamentos = agendamentos.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
     });
   }
 
@@ -147,16 +149,17 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  // --- NOVA FUNÇÃO: Calcula se o atendimento está atrasado ---
-  isAtrasado(dataDoAgendamento: string | Date): boolean {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+  isAtrasado(dataString: string | Date | undefined): boolean {
+    if (!dataString) return false;
 
-    // Converte a data do banco (que vem como string 'YYYY-MM-DD') para Date
-    // O 'T00:00:00' evita bugs de fuso horário onde o JS subtrai 3 horas e joga pro dia anterior
-    const dataAgendada = new Date(dataDoAgendamento + 'T00:00:00');
+    const dataParts = dataString.toString().split('T')[0].split('-');
 
-    return dataAgendada < hoje;
+    const dataAtendimento = new Date(Number(dataParts[0]), Number(dataParts[1]) - 1, Number(dataParts[2]));
+
+    const dataAtual = new Date();
+    dataAtual.setHours(0, 0, 0, 0);
+
+    return dataAtendimento < dataAtual;
   }
 
   filtroDatas = (d: Date | null): boolean => true;

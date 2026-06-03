@@ -1,10 +1,8 @@
 import { Injectable } from '@angular/core';
-import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, BehaviorSubject, of, firstValueFrom } from 'rxjs'; // 'firstValueFrom' vem de 'rxjs'
-import { switchMap, map } from 'rxjs/operators'; // 'map' vem de 'rxjs/operators'
-import { Agendamento } from './agendamento.service';
+import { Observable, BehaviorSubject, firstValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { environment } from '../../environments/environment';
 
@@ -12,92 +10,88 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class AuthService {
+  private apiUrl = environment.apiUrl;
   private usuarioLogadoSubject = new BehaviorSubject<any | null>(null);
   public usuarioLogado$ = this.usuarioLogadoSubject.asObservable();
 
   constructor(
-    private afAuth: AngularFireAuth,
-    private firestore: AngularFirestore,
+    private http: HttpClient,
     private router: Router
   ) {
-    this.afAuth.authState.pipe(
-      switchMap(user => {
-        if (user) {
-          return this.firestore.collection('users').doc(user.uid).valueChanges();
-        } else {
-          return of(null);
-        }
-      })
-    ).subscribe(userData => {
-      this.usuarioLogadoSubject.next(userData);
-    });
-  }
+    const storedUser = localStorage.getItem('@ConectaSUS:user');
+    const storedToken = localStorage.getItem('@ConectaSUS:token');
 
-
-async login(email: string, password: string) {
-    try {
-      const userCredential = await this.afAuth.signInWithEmailAndPassword(email, password);
-      const user = userCredential.user;
-
-      if (user) {
-        const docRef = this.firestore.collection('users').doc(user.uid);
-        const snapshot = await docRef.ref.get();
-
-        if (!snapshot.exists) {
-          // Se não encontrou o usuário no Firestore
-          await this.afAuth.signOut();
-          Swal.fire({
-            icon: 'error',
-            title: 'Erro ao realizar login',
-            text: 'Usuário removido do sistema. Entre em contato com o administrador.',
-            confirmButtonColor: '#d33'
-          });
-
-          return;
-        }
-
-        this.router.navigate(['/home']);
-      }
-
-    } catch (error: any) {
-      this.handleAuthError(error); 
+    if (storedUser && storedToken) {
+      this.usuarioLogadoSubject.next(JSON.parse(storedUser));
     }
   }
 
-  async logout() {
-    await this.afAuth.signOut();
+  async login(email: string, password: string): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.apiUrl}/sessions`, { email, password })
+      );
+
+      const { user, token } = response;
+
+      localStorage.setItem('@ConectaSUS:token', token);
+      localStorage.setItem('@ConectaSUS:user', JSON.stringify(user));
+
+      this.usuarioLogadoSubject.next(user);
+      this.router.navigate(['/home']);
+    } catch (error: any) {
+      this.handleAuthError(error);
+      throw error;
+    }
+  }
+
+  async logout(): Promise<void> {
+    localStorage.removeItem('@ConectaSUS:token');
+    localStorage.removeItem('@ConectaSUS:user');
+    this.usuarioLogadoSubject.next(null);
     this.router.navigate(['/login']);
   }
 
   async registerInterno(email: string, password: string, departamento: string, nome: string, tipo: string): Promise<void> {
-    const { initializeApp } = await import('firebase/app');
-    const { getAuth, createUserWithEmailAndPassword } = await import('firebase/auth');
-    const app = initializeApp(environment.firebaseConfig, 'segundoApp');
-    const secondAuth = getAuth(app);
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(secondAuth, email, password);
-      const newUser = userCredential.user;
-      if (newUser) {
-        await this.firestore.collection('users').doc(newUser.uid).set({ uid: newUser.uid, email, departamento, nome, tipo });
-      }
-    } catch (error) {
-    }
+    await firstValueFrom(
+      this.http.post(`${this.apiUrl}/interns`, { email, password, departamento, nome, tipo })
+    );
   }
 
-  async atualizarUsuario(uid: string, nome: string, tipo: string, departamento: string): Promise<void> {
-    await this.firestore.collection('users').doc(uid).update({ nome, tipo, departamento });
+  async atualizarUsuario(id: string, nome: string, tipo: string, departamento: string, email: string): Promise<void> {
+    let rota = 'secretarys';
+    const payload: any = {
+      name: nome,
+      email: email
+    };
+
+    if (tipo === 'Estagiário') {
+      rota = 'interns';
+      if (departamento) {
+        payload.departament = departamento;
+      }
+    } else if (tipo === 'Professor') {
+      rota = 'professors';
+      if (departamento) {
+        payload.departament = departamento;
+      }
+    }
+
+    await firstValueFrom(
+      this.http.put(`${this.apiUrl}/${rota}/${id}`, payload)
+    );
   }
 
   async enviarEmailRedefinicaoSenha(email: string): Promise<void> {
-    await this.afAuth.sendPasswordResetEmail(email);
+    await firstValueFrom(
+      this.http.post(`${this.apiUrl}/password/forgot`, { email })
+    );
   }
 
-
-  getUsuarioLogado(): Promise<any | null> {
+  async getUsuarioLogado(): Promise<any | null> {
     return firstValueFrom(this.usuarioLogado$);
   }
-  
+
   async getTipoUsuario(): Promise<string | null> {
     const user = await this.getUsuarioLogado();
     return user?.tipo || null;
@@ -106,11 +100,10 @@ async login(email: string, password: string) {
   getTipoUsuarioLocal(): string | null {
     return this.usuarioLogadoSubject.getValue()?.tipo || null;
   }
-  
-  getUser(): Observable<any> {
-    return this.afAuth.authState;
-  }
 
+  getUser(): Observable<any> {
+    return this.usuarioLogado$;
+  }
 
   podeGerenciarUsuarios(): Observable<boolean> {
     return this.usuarioLogado$.pipe(map(user => user?.tipo === 'Secretaria'));
@@ -120,23 +113,15 @@ async login(email: string, password: string) {
     return this.usuarioLogado$.pipe(map(user => user?.tipo === 'Professor' || user?.tipo === 'Secretaria'));
   }
 
-  private handleAuthError(error: any) {
-    console.error("Erro de autenticação:", error); 
-
+  private handleAuthError(error: HttpErrorResponse): void {
     let errorMsg = "Erro ao processar a solicitação. Tente novamente.";
 
-    if (error.code === 'auth/email-already-in-use') {
-      errorMsg = "Este e-mail já está em uso!";
-    } else if (error.code === 'auth/weak-password') {
-      errorMsg = "A senha precisa ter pelo menos 6 caracteres.";
-    } else if (error.code === 'auth/invalid-email') {
-      errorMsg = "O e-mail fornecido não é válido.";
-    } else if (
-      error.code === 'auth/wrong-password', 
-      error.code === 'auth/user-not-found' ,
-      error.code === 'auth/invalid-credential'
-  ) {
+    if (error.status === 401) {
       errorMsg = "Email ou senha incorretos.";
+    } else if (error.status === 400) {
+      errorMsg = "Dados inválidos fornecidos.";
+    } else if (error.error && error.error.message) {
+      errorMsg = error.error.message;
     }
 
     Swal.fire({

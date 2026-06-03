@@ -16,7 +16,7 @@ export class EstagiarioService {
   constructor(private firestore: AngularFirestore) {}
 
   buscarEstagiariosPorNome(nome: string): Observable<Estagiario[]> {
-    return this.firestore.collection<Estagiario>('users', ref => 
+    return this.firestore.collection<Estagiario>('users', ref =>
       ref.where('tipo', '==', 'Estagiário')
          .orderBy('nome')
          .startAt(nome)

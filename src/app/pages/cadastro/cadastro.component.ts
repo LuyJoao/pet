@@ -1,15 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2';
+import { UsuarioService } from '../../services/usuario.service';
 
 @Component({
   selector: 'app-cadastro',
   templateUrl: './cadastro.component.html',
   styleUrls: ['./cadastro.component.scss']
 })
-export class CadastroComponent implements OnInit {
+export class CadastroComponent implements OnInit, OnDestroy {
   cadastroForm: FormGroup;
   senhaInvalida: boolean = false;
   formInvalido: boolean = false;
@@ -21,39 +22,16 @@ export class CadastroComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
+    private usuarioService: UsuarioService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {
     this.cadastroForm = this.fb.group({});
   }
 
   ngOnInit(): void {
-    const navigation = this.router.getCurrentNavigation();
-    const stateUsuario = navigation?.extras?.state?.['usuario'];
-
-    const storedUsuario = sessionStorage.getItem('usuarioEdicao');
-    this.usuarioEdicao = stateUsuario || (storedUsuario ? JSON.parse(storedUsuario) : null);
-
-    console.log('Usuário recebido para edição:', this.usuarioEdicao);
-
     this.buildForm();
     this.checkRouteForContext();
-
-    if (this.usuarioEdicao) {
-      this.isEditMode = true;
-      this.userId = this.usuarioEdicao.uid;
-
-      this.cadastroForm.patchValue({
-        nome: this.usuarioEdicao.nome,
-        email: this.usuarioEdicao.email,
-        tipo: this.usuarioEdicao.tipo,
-        departamento: this.usuarioEdicao.departamento
-      });
-
-      this.cadastroForm.get('email')?.disable();
-      this.cadastroForm.get('password')?.disable();
-      this.cadastroForm.get('confirmPassword')?.disable();
-    }
   }
 
   private buildForm(): void {
@@ -72,9 +50,10 @@ export class CadastroComponent implements OnInit {
 
   private checkRouteForContext(): void {
     const navigation = this.router.getCurrentNavigation();
-    this.usuarioEdicao = navigation?.extras?.state?.['usuario'] || null;
+    const stateUsuario = navigation?.extras?.state?.['usuario'];
 
-    if (this.usuarioEdicao) {
+    if (stateUsuario) {
+      this.usuarioEdicao = stateUsuario;
       sessionStorage.setItem('usuarioEdicao', JSON.stringify(this.usuarioEdicao));
     } else {
       const stored = sessionStorage.getItem('usuarioEdicao');
@@ -83,7 +62,7 @@ export class CadastroComponent implements OnInit {
       }
     }
 
-    this.userId = this.usuarioEdicao?.uid || this.route.snapshot.paramMap.get('id');
+    this.userId = this.usuarioEdicao?.id || this.usuarioEdicao?.uid || this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.usuarioEdicao;
 
     const contexto = this.route.snapshot.queryParamMap.get('contexto');
@@ -96,11 +75,12 @@ export class CadastroComponent implements OnInit {
 
     if (this.usuarioEdicao) {
       this.pageTitle = 'Editar Usuário';
+
       this.cadastroForm.patchValue({
-        nome: this.usuarioEdicao.nome,
+        nome: this.usuarioEdicao.name || this.usuarioEdicao.nome,
         email: this.usuarioEdicao.email,
-        tipo: this.usuarioEdicao.tipo,
-        departamento: this.usuarioEdicao.departamento
+        tipo: this.usuarioEdicao.tipo || this.usuarioEdicao.role,
+        departamento: this.usuarioEdicao.departament || this.usuarioEdicao.departamento
       });
 
       this.cadastroForm.get('email')?.disable();
@@ -139,19 +119,37 @@ export class CadastroComponent implements OnInit {
       return;
     }
 
-    const { email, password, departamento, nome, tipo } = this.cadastroForm.getRawValue();
+    const formValues = this.cadastroForm.getRawValue();
+    const { email, password, departamento } = formValues;
+    const nome = formValues.nome || formValues.name;
+    const tipo = formValues.tipo || formValues.role;
 
     try {
       if (this.isEditMode && this.userId) {
-        await this.authService.atualizarUsuario(this.userId, nome, tipo, departamento);
+        await this.authService.atualizarUsuario(this.userId, nome, tipo, departamento, email);
         Swal.fire({
-          icon: 'success',
-          title: 'Sucesso!',
-          text: 'Usuário atualizado com sucesso!',
-          confirmButtonColor: '#0d47a1'
+          icon: 'success', title: 'Sucesso!', text: 'Usuário atualizado com sucesso!', confirmButtonColor: '#0d47a1'
         });
       } else {
-        await this.authService.registerInterno(email, password, departamento, nome, tipo);
+        if (tipo === 'Estagiário') {
+          const usuarioLogado = await this.authService.getUsuarioLogado();
+          const professorId = usuarioLogado?.id || usuarioLogado?.uid;
+
+          if (!professorId) {
+            Swal.fire('Erro', 'Não foi possível identificar o professor logado para vincular ao estagiário.', 'error');
+            return;
+          }
+
+          await this.usuarioService.criarEstagiario({
+            name: nome,
+            email: email,
+            departament: departamento,
+            password: password,
+            professor_id: professorId
+          });
+        } else {
+          await this.authService.registerInterno(email, password, departamento, nome, tipo);
+        }
       }
 
       if (this.route.snapshot.queryParamMap.get('contexto') === 'estagiario') {
@@ -161,6 +159,7 @@ export class CadastroComponent implements OnInit {
       }
     } catch (error) {
       console.error('Erro ao salvar usuário:', error);
+      Swal.fire('Erro!', 'Ocorreu um problema ao salvar o cadastro.', 'error');
     }
   }
 
@@ -188,5 +187,4 @@ export class CadastroComponent implements OnInit {
   ngOnDestroy(): void {
     sessionStorage.removeItem('usuarioEdicao');
   }
-
 }

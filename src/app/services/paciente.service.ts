@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/compat/firestore';
-import { map } from 'rxjs/operators';
-import { from, Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, firstValueFrom , of} from 'rxjs';
+import { map , catchError} from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Paciente {
   id?: string;
@@ -17,71 +18,107 @@ export interface Paciente {
   bairro: string;
   numero: string;
   complemento: string;
+  gender?: string; // Adicionado pois o backend exige
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class PacienteService {
-  private pacientesCollection: AngularFirestoreCollection<Paciente>;
+  private apiUrl = `${environment.apiUrl}/patients`;
 
-  constructor(private firestore: AngularFirestore) {
-    this.pacientesCollection = firestore.collection<Paciente>('pacientes');
-  }
+  constructor(private http: HttpClient) {}
 
   criarPaciente(paciente: Paciente): Promise<void> {
-    const id = this.firestore.createId();
-    return this.pacientesCollection.doc(id).set({ ...paciente, id });
+    const payload = this.mapFrontendToBackend(paciente);
+    return firstValueFrom(this.http.post<void>(this.apiUrl, payload));
   }
 
   obterPacientes(): Observable<Paciente[]> {
-    return this.pacientesCollection.snapshotChanges().pipe(
-      map(actions => actions.map(a => {
-        const data = a.payload.doc.data() as Paciente;
-        const id = a.payload.doc.id;
-        return { id, ...data };
-      }))
+    return this.http.get<any[]>(this.apiUrl).pipe(
+      map(pacientes => pacientes.map(p => this.mapBackendToFrontend(p)))
     );
   }
 
   obterPacientePorId(id: string): Observable<Paciente | undefined> {
-    return this.pacientesCollection.doc<Paciente>(id).valueChanges();
+    return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(
+      map(p => p ? this.mapBackendToFrontend(p) : undefined)
+    );
   }
 
-  atualizarPaciente(id: string, paciente: Paciente) {
-    return this.firestore.collection('pacientes').doc(id).update(paciente);
-  }  
+  atualizarPaciente(id: string, paciente: Paciente): Promise<void> {
+    const payload = this.mapFrontendToBackend(paciente);
+    return firstValueFrom(this.http.put<void>(`${this.apiUrl}/${id}`, payload));
+  }
 
-  deletarPaciente(id: string) {
-    return this.firestore.collection('pacientes').doc(id).delete();
+  deletarPaciente(id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${this.apiUrl}/${id}`));
   }
 
   buscarPacientePorNome(nome: string): Observable<Paciente[]> {
-    const pacientesFiltrados = this.firestore.collection<Paciente>('pacientes', ref => 
-      ref.where('nome', '>=', nome)
-         .where('nome', '<=', nome + '\uf8ff')
-         .limit(10)
-    );
-    return pacientesFiltrados.snapshotChanges().pipe(
-      map(actions => actions.map(a => {
-        const data = a.payload.doc.data() as Paciente;
-        const id = a.payload.doc.id;
-        return { id, ...data };
-      }))
+    return this.http.get<any>(`${this.apiUrl}/name/${nome}`).pipe(
+      map(p => p ? [this.mapBackendToFrontend(p)] : [])
     );
   }
 
+  buscarPorCPF(cpf: string): Observable<Paciente[]> {
+    return this.http.get<any>(`${this.apiUrl}/cpf/${cpf}`).pipe(
+      map(p => p ? [this.mapBackendToFrontend(p)] : []),
+      catchError(err => {
+        return of([]);
+      })
+    );
+  }
 
-buscarPorCPF(cpf: string): Observable<Paciente[]> {
-  const promise = this.pacientesCollection.ref.where('cpf', '==', cpf).get().then(snapshot => {
-    const pacientes: Paciente[] = [];
-    snapshot.forEach(doc => {
-      pacientes.push({ id: doc.id, ...(doc.data() as Paciente) });
-    });
-    return pacientes;
-  });
+  buscarPorNumeroSus(susnumber: string): Observable<Paciente[]> {
+    return this.http.get<any>(`${this.apiUrl}/susnumber/${susnumber}`).pipe(
+      map(p => p ? [this.mapBackendToFrontend(p)] : [])
+    );
+  }
 
-  return from(promise);
-}
+  // --- Funções de Mapeamento (Tradução de Chaves) ---
 
+  private mapBackendToFrontend(backendData: any): Paciente {
+    let dataFormatada = '';
+
+    if (backendData.birth_date) {
+      const dateObj = new Date(backendData.birth_date);
+      dataFormatada = dateObj.toISOString().split('T')[0];
+    }
+
+    return {
+      id: backendData.id,
+      nome: backendData.name,
+      dataNascimento: dataFormatada || backendData.dataNascimento,
+      cpf: backendData.cpf,
+      numeroSus: backendData.susnumber || backendData.numeroSus,
+      telefone: backendData.phone || backendData.telefone,
+      email: backendData.email,
+      cep: backendData.cep,
+      cidade: backendData.city || backendData.cidade,
+      rua: backendData.street || backendData.rua,
+      bairro: backendData.district || backendData.bairro,
+      numero: backendData.number || backendData.numero,
+      complemento: backendData.complement || backendData.complemento || '',
+      gender: backendData.gender
+    };
+  }
+
+  private mapFrontendToBackend(frontendData: Paciente): any {
+    return {
+      name: frontendData.nome,
+      cpf: frontendData.cpf.replace(/\D/g, ''), // Garante envio de apenas números para a regra length(11) do Joi
+      susnumber: frontendData.numeroSus,
+      email: frontendData.email || undefined,
+      birth_date: frontendData.dataNascimento,
+      phone: frontendData.telefone,
+      gender: frontendData.gender || 'Não informado', // Fallback caso o form do front não tenha esse campo
+      cep: frontendData.cep,
+      city: frontendData.cidade,
+      street: frontendData.rua,
+      district: frontendData.bairro,
+      number: frontendData.numero,
+      complement: frontendData.complemento || undefined
+    };
+  }
 }

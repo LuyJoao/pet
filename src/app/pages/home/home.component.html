@@ -5,7 +5,7 @@
 
   <div *ngIf="tipoUsuario === 'Professor' || tipoUsuario === 'Estagiário'" class="painel-pendentes" style="margin-bottom: 30px; background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 5px solid #ffc107;">
     <h3 style="color: #856404; margin-top: 0; display: flex; align-items: center; gap: 8px;">
-      <mat-icon>warning</mat-icon> 
+      <mat-icon>warning</mat-icon>
       <span *ngIf="tipoUsuario === 'Professor'">Seus alunos com Atendimentos Pendentes / Atrasados</span>
       <span *ngIf="tipoUsuario === 'Estagiário'">Seus Atendimentos Pendentes / Atrasados</span>
     </h3>
@@ -43,7 +43,7 @@
   <div class="main-layout">
     <div class="left-column">
       <h3>Agendamentos para {{ selected | date: 'dd/MM/yyyy' }}</h3>
-      
+
       <div *ngIf="agendamentos.length === 0" class="sem-agendamentos">
           <p>Nenhum agendamento para esta data.</p>
       </div>
@@ -52,18 +52,18 @@
         <div class="appointment-info">
           <p><strong>Horário:</strong> {{ agendamento.hora }}</p>
           <p><strong>Paciente:</strong> {{ agendamento.nome }}</p>
-          
+
           <p *ngIf="tipoUsuario === 'Secretaria' || tipoUsuario === 'Professor'">
             <strong>Estagiário:</strong> {{ agendamento.estagiarioNome }}
           </p>
-          
+
           <p *ngIf="tipoUsuario === 'Secretaria'">
             <strong>Professor:</strong> {{ agendamento.professorResponsavelNome }}
           </p>
         </div>
 
         <div class="appointment-actions">
-          
+
           <ng-container *ngIf="tipoUsuario === 'Estagiário'">
             <button
               mat-raised-button
@@ -88,7 +88,7 @@
               </mat-chip>
             </mat-chip-listbox>
           </ng-container>
-          
+
           <ng-container *ngIf="tipoUsuario === 'Secretaria'">
             <mat-icon class="action-icon edit-icon"
               *ngIf="!dataNoPassado"
@@ -111,7 +111,7 @@
       <mat-card class="demo-inline-calendar-card">
         <mat-calendar [(selected)]="selected" (selectedChange)="buscarAgendamentos($event)" [dateFilter]="filtroDatas"></mat-calendar>
       </mat-card>
-      
+
       <button
         mat-raised-button
         class="custom-btn primary-btn schedule-btn"
